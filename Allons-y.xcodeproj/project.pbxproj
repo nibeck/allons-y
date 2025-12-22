@@ -6,13 +6,8 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		3EA04A192EF316D4000426D0 /* Simple TARDIS.usdc in Resources */ = {isa = PBXBuildFile; fileRef = 3EA04A182EF316D4000426D0 /* Simple TARDIS.usdc */; };
-/* End PBXBuildFile section */
-
 /* Begin PBXFileReference section */
 		3EA049FF2EF31071000426D0 /* Allons-y.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Allons-y.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		3EA04A182EF316D4000426D0 /* Simple TARDIS.usdc */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Simple TARDIS.usdc"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -37,7 +32,6 @@
 		3EA049F62EF31071000426D0 = {
 			isa = PBXGroup;
 			children = (
-				3EA04A182EF316D4000426D0 /* Simple TARDIS.usdc */,
 				3EA04A012EF31071000426D0 /* Allons-y */,
 				3EA04A002EF31071000426D0 /* Products */,
 			);
@@ -115,7 +109,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3EA04A192EF316D4000426D0 /* Simple TARDIS.usdc in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -15,7 +15,7 @@ struct ContentView: View {
             // Top: SceneKit 3D view
             SceneKitView(viewModel: viewModel)
                 .frame(maxWidth: .infinity)
-                .frame(height: 300)
+                .frame(height: 450)
                 .background(Color(.systemBackground))
                 .overlay(alignment: .topLeading) {
                     Text("Alons-Y")
@@ -39,7 +39,7 @@ struct ContentView: View {
     private var controls: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text("3D Model Controls").font(.headline)
+                //Text("3D Model Controls").font(.headline)
 
                 Group {
                     LabeledContent("Rotation X") {
@@ -59,7 +59,7 @@ struct ContentView: View {
                     }
                 }
 
-                LabeledContent("Scale") {
+                LabeledContent("Scale:") {
                     Slider(value: $viewModel.scale, in: 0.2...3, step: 0.1) {
                         Text("Scale")
                     } minimumValueLabel: { Text("0.2") } maximumValueLabel: { Text("3") }
@@ -68,6 +68,13 @@ struct ContentView: View {
                 ColorPicker("Color", selection: $viewModel.color, supportsOpacity: false)
 
                 Toggle("Spin", isOn: $viewModel.isSpinning)
+                
+                Button("Red Alert") {
+                    viewModel.requestRedAlert()
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
+                
             }
             .padding(.vertical)
         }

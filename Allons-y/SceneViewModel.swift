@@ -10,13 +10,21 @@ final class SceneViewModel: ObservableObject {
     @Published var rotationX: Double = 0
     @Published var rotationY: Double = 0
     @Published var rotationZ: Double = 0
-    @Published var scale: Double = 1.0
+    @Published var scale: Double = 2.0
     @Published var color: Color = .teal
     @Published var isSpinning: Bool = false
+
+    /// Versioned trigger to request a one-shot "Red Alert" action in the SceneKit view.
+    @Published var redAlertVersion: Int = 0
+
+    /// Call to request that the SceneKit view set the "Front-Back Windows" materials to red.
+    func requestRedAlert() {
+        // Use wrapping add to avoid overflow traps while still changing the value
+        redAlertVersion &+= 1
+    }
 
     init() {}
 
     /// UIColor representation of the current SwiftUI Color for SceneKit materials.
     var uiColor: UIColor { UIColor(color) }
 }
-

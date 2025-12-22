@@ -9,7 +9,6 @@ struct SceneKitView: UIViewRepresentable {
         scnView.scene = SCNScene()
         scnView.allowsCameraControl = true
         scnView.antialiasingMode = .multisampling4X
-//        scnView.backgroundColor = UIColor.systemBackground
         scnView.backgroundColor = UIColor.black
         // Camera
         let cameraNode = SCNNode()
@@ -51,11 +50,20 @@ struct SceneKitView: UIViewRepresentable {
             modelNode = SCNNode(geometry: box)
         }
 
+               
         scnView.scene?.rootNode.addChildNode(modelNode)
-
         context.coordinator.modelNode = modelNode
         context.coordinator.startDisplayLink()
 
+        // Display the node tree of the model
+        dumpNodes(modelNode)
+        
+        // After context.coordinator.modelNode = modelNode
+        indexParts(in: modelNode, coordinator: context.coordinator)
+        
+        // Debug: Dump the indexed parts to ensure they were found
+        dumpIndex(coordinator: context.coordinator)
+        
         return scnView
     }
 
@@ -77,16 +85,160 @@ struct SceneKitView: UIViewRepresentable {
 
         // Handle spinning
         context.coordinator.isSpinning = viewModel.isSpinning
+
+        // Handle Red Alert trigger
+        if context.coordinator.lastHandledRedAlertVersion != viewModel.redAlertVersion {
+            context.coordinator.lastHandledRedAlertVersion = viewModel.redAlertVersion
+
+            // Define the pulse action (Red -> Black -> Red)
+            let duration: TimeInterval = 0.5
+            
+            let toBlack = SCNAction.customAction(duration: duration) { node, elapsedTime in
+                let percentage = elapsedTime / CGFloat(duration)
+                // Red (1,0,0) to Black (0,0,0)
+                let val = 1.0 - percentage
+                self.setMaterials(of: node, to: UIColor(red: val, green: 0, blue: 0, alpha: 1))
+            }
+            
+            let toRed = SCNAction.customAction(duration: duration) { node, elapsedTime in
+                let percentage = elapsedTime / CGFloat(duration)
+                // Black (0,0,0) to Red (1,0,0)
+                let val = percentage
+                self.setMaterials(of: node, to: UIColor(red: val, green: 0, blue: 0, alpha: 1))
+            }
+            
+            let pulse = SCNAction.sequence([toBlack, toRed])
+            let threePulses = SCNAction.repeat(pulse, count: 3)
+            
+            // Start Red, Pulse 3 times, End Red
+            let setRed = SCNAction.run { node in
+                self.setMaterials(of: node, to: .red)
+            }
+            
+            let sequence = SCNAction.sequence([setRed, threePulses, setRed])
+            
+            // Apply directly to parts stored in the coordinator
+            for nodes in context.coordinator.parts.values {
+                for node in nodes {
+                    node.removeAllActions()
+                    node.runAction(sequence)
+                }
+            }
+        }
     }
 
+    func dumpNodes(_ node: SCNNode, indent: String = "") {
+        let geomName = node.geometry?.name ?? "no geometry"
+        print("\(indent)- \(node.name ?? "<unnamed>") [\(geomName)]")
+        for child in node.childNodes {
+            dumpNodes(child, indent: indent + "  ")
+        }
+    }
+    
     func makeCoordinator() -> Coordinator { Coordinator() }
 
+    // MARK: - Node utilities
+    private func findNode(named exactName: String, under root: SCNNode) -> SCNNode? {
+        if root.name == exactName { return root }
+        for child in root.childNodes {
+            if let found = findNode(named: exactName, under: child) { return found }
+        }
+        return nil
+    }
+
+    private func findNode(containingName partial: String, under root: SCNNode) -> SCNNode? {
+        if let name = root.name, name.localizedCaseInsensitiveContains(partial) { return root }
+        for child in root.childNodes {
+            if let found = findNode(containingName: partial, under: child) { return found }
+        }
+        return nil
+    }
+
+    private func setMaterials(of node: SCNNode, to color: UIColor) {
+        // If this node has geometry, recolor all its materials
+        if let materials = node.geometry?.materials, !materials.isEmpty {
+            for m in materials { m.diffuse.contents = color }
+        }
+        // Recurse into children to ensure the whole subtree is recolored
+        for child in node.childNodes {
+            setMaterials(of: child, to: color)
+        }
+    }
+
+    private func indexParts(in root: SCNNode, coordinator: Coordinator) {
+        // Direct assignment using exact names
+        coordinator.parts[.frontWindows] = findNodes(named: "Front_Windows", under: root)
+        coordinator.parts[.leftWindows] = findNodes(named: "Left_Windows", under: root)
+        coordinator.parts[.rearWindows] = findNodes(named: "Rear_Windows", under: root)
+        coordinator.parts[.rightWindows] = findNodes(named: "Right_Windows", under: root)
+        coordinator.parts[.topLightGlass] = findNodes(named: "Top_Light_Glass", under: root)
+
+        // Validate that all parts were found
+        var missingParts = false
+        for key in PartKey.allCases {
+            if let parts = coordinator.parts[key], !parts.isEmpty {
+                continue
+            }
+            missingParts = true
+        }
+        
+        if missingParts {
+            print("Bad Model")
+            dumpIndex(coordinator: coordinator)
+            fatalError("Bad Model")
+        }
+    }
+
+    private func dumpIndex(coordinator: Coordinator) {
+        print("--- 3D Part Index Dump ---")
+        if coordinator.parts.isEmpty {
+            print("Index is empty!")
+        } else {
+            for (key, nodes) in coordinator.parts {
+                print("Key: \(key) - Found \(nodes.count) node(s)")
+                for node in nodes {
+                    print("  -> \(node.name ?? "<unnamed>")")
+                }
+            }
+        }
+        print("--------------------------")
+    }
+    
+    // MARK: - Helpers
+    private func degreesToRadians(_ deg: Double) -> Float {
+        return Float(deg * .pi / 180.0)
+    }
+
+    private func findNodes(named exactName: String, under root: SCNNode) -> [SCNNode] {
+        var results: [SCNNode] = []
+        if root.name == exactName { results.append(root) }
+        for child in root.childNodes {
+            results.append(contentsOf: findNodes(named: exactName, under: child))
+        }
+        return results
+    }
+
+    private func findNodes(containingName partial: String, under root: SCNNode) -> [SCNNode] {
+        var results: [SCNNode] = []
+        if let name = root.name, name.localizedCaseInsensitiveContains(partial) {
+            results.append(root)
+        }
+        for child in root.childNodes {
+            results.append(contentsOf: findNodes(containingName: partial, under: child))
+        }
+        return results
+    }
+    
     final class Coordinator: NSObject {
         weak var modelNode: SCNNode?
         var displayLink: CADisplayLink?
         var isSpinning: Bool = false
         var lastTimestamp: CFTimeInterval = 0
+        var lastHandledRedAlertVersion: Int = 0
 
+        // Cached parts
+        var parts: [PartKey: [SCNNode]] = [:]
+        
         func startDisplayLink() {
             stopDisplayLink()
             let link = CADisplayLink(target: self, selector: #selector(tick(_:)))
@@ -112,9 +264,12 @@ struct SceneKitView: UIViewRepresentable {
             node.eulerAngles = angles
         }
     }
-
-    // MARK: - Helpers
-    private func degreesToRadians(_ deg: Double) -> Float {
-        return Float(deg * .pi / 180.0)
+    
+    enum PartKey: CaseIterable, Hashable {
+        case frontWindows
+        case rearWindows
+        case leftWindows
+        case rightWindows
+        case topLightGlass
     }
 }
