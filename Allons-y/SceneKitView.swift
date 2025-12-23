@@ -26,7 +26,7 @@ struct SceneKitView: UIViewRepresentable {
         let ambientLightNode = SCNNode()
         ambientLightNode.light = SCNLight()
         ambientLightNode.light?.type = .ambient
-        ambientLightNode.light?.color = UIColor(white: 0.6, alpha: 1.0)
+        ambientLightNode.light?.color = UIColor(white: 0.8, alpha: 1.0)
         scnView.scene?.rootNode.addChildNode(ambientLightNode)
 
         // Geometry

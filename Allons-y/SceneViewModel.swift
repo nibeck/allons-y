@@ -11,7 +11,7 @@ final class SceneViewModel: ObservableObject {
     @Published var rotationY: Double = 0
     @Published var rotationZ: Double = 0
     @Published var scale: Double = 2.0
-    @Published var color: Color = .teal
+    @Published var color: Color = .orange
     @Published var isSpinning: Bool = false
 
     /// Versioned trigger to request a one-shot "Red Alert" action in the SceneKit view.
